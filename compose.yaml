@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: 'mongo:6.0.3'
+    container_name: mongodb
+    environment:
+      - 'MONGO_INITDB_DATABASE=sggbd'
+      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
+      - 'MONGO_INITDB_ROOT_USERNAME=root'
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+      - ./dumps:/dumps  # Папка на локальной машине
+
+  backend-sgg:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spring_backend
+    ports:
+      - '8080:8080'
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://root:secret@mongodb:27017/sggbd?authSource=admin
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mongodb
+
+  mongodb_cron:
+    image: 'mongo:6.0.3'
+    container_name: mongodb_cron
+    depends_on:
+      - mongodb
+    volumes:
+      - ./dumps:/dumps  # Папка на локальной машине
+    entrypoint: >
+      sh -c "echo '0 0 * * * mongodump --username root --password secret --db sggbd --out /dumps/dump_$(date +'%Y-%m-%d')' > /etc/cron.d/mongodump && cron -f"
+
+volumes:
+  mongodb_data:
