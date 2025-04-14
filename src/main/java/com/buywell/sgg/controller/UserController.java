@@ -25,6 +25,7 @@ public class UserController {
     private String mongoUri;
 
     public UserController(UserRepository userRepository) {
+        logger.info("MongoDB URI: {}", mongoUri);
         this.userRepository = userRepository;
     }
 
